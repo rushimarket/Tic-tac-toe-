@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe Adventure</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Paytone+One&family=Fredoka:wght@700&display=swap');
+
+        :root {
+            --bg-blue: #1c66e3;
+            --btn-orange: #fbb016;
+            --btn-green: #29cc8b;
+            --btn-cyan: #1bc4f2;
+            --dark-blue: #113c8a;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            height: 100%;
+            font-family: 'Fredoka', sans-serif;
+            background: var(--bg-blue);
+            color: white;
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+            transition: background 0.5s ease;
+        }
+
+        .screen {
+            width: 100%; max-width: 400px;
+            height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* --- LOADING SCREEN --- */
+        #loading-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-blue);
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 50px; height: 50px;
+            border: 6px solid rgba(255,255,255,0.2);
+            border-top: 6px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- LAYAR AWAL --- */
+        #main-menu, #level-menu, #adventure-map { display: flex; z-index: 10; }
+        #level-menu, #game-screen, #adventure-map { display: none; }
+        
+        .logo-container {
+            margin-top: 60px; 
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .logo-text {
+            font-family: 'Paytone One', sans-serif;
+            line-height: 0.8;
+            letter-spacing: -2px;
+            text-transform: uppercase;
+        }
+
+        .block-word { font-size: 90px; color: #ffca28; text-shadow: 0 10px 0 #e67e22; }
+        .blast-word { font-size: 75px; color: #1bc4f2; text-shadow: 0 8px 0 #0d8cb3; }
+
+        .adventure-tag {
+            font-size: 16px; letter-spacing: 2px; margin-top: 10px;
+            font-weight: 900; color: white;
+        }
+
+        /* --- VICTORY CARD --- */
+        .victory-card {
+            background: #ffffff;
+            border-radius: 20px;
+            margin-bottom: 50px; 
+            width: 85%;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.1);
+        }
+
+        .victory-title { 
+            color: #7188b3; 
+            font-size: 16px; 
+            font-weight: 900; 
+            margin-bottom: 8px;
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        .victory-info {
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            gap: 10px; 
+            background: #f8faff; 
+            border-radius: 15px; 
+            padding: 15px;
+            border: 1px solid #edf2ff;
+        }
+
+        .crown-icon { font-size: 45px; }
+        .win-count { 
+            color: #1c66e3; 
+            font-size: 42px; 
+            font-weight: 900;
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        /* --- BUTTONS --- */
+        .menu-buttons {
+            margin-top: auto;
+            margin-bottom: 40px;
+            width: 100%;
+            display: flex; flex-direction: column; gap: 15px;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 18px; border-radius: 22px; border: none;
+            font-size: 26px; font-weight: 800; color: white;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.15); transition: 0.1s;
+            width: 100%;
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        .btn:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(0,0,0,0.15); }
+        .btn-red { background: #eb5e55; border-bottom: 8px solid #b0463f; }
+        .btn-orange { background: var(--btn-orange); border-bottom: 8px solid #d48f00; }
+        .btn-green { background: var(--btn-green); border-bottom: 8px solid #1a9665; }
+        .btn-cyan { background: var(--btn-cyan); border-bottom: 8px solid #0e8cae; }
+
+        /* --- GAME LOGIC STYLES --- */
+        .header-game { width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 20px; position: relative; }
+        .nav-buttons { width: 100%; display: flex; justify-content: space-between; position: absolute; top: 0; padding: 0 5px; box-sizing: border-box; }
+        .score-board { display: flex; align-items: center; justify-content: center; background: var(--dark-blue); padding: 10px; border-radius: 25px; box-shadow: inset 0 4px 10px rgba(0,0,0,0.3); margin-top: 15px; }
+        .score-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 85px; padding: 12px 5px; background: white; border-radius: 18px; box-shadow: 0 5px 0 #bdc3c7; }
+        #box-x { color: #eb5e55; margin-right: 12px; }
+        #box-o { color: #40a9e6; margin-left: 12px; }
+        .score-label { font-size: 11px; font-weight: 900; opacity: 0.8; }
+        .score-val { font-size: 32px; font-weight: 900; }
+        .score-vs { font-size: 22px; font-weight: 900; color: #ffca28; }
+        .grid { display: grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); gap: 12px; background: var(--dark-blue); padding: 15px; border-radius: 25px; margin-top: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); position: relative; }
+        .cell { background: #1c2e5a; border-radius: 15px; display: flex; justify-content: center; align-items: center; cursor: pointer; position: relative; transition: 0.3s; }
+        .x-mark { font-family: 'Paytone One', sans-serif; font-size: 65px; color: #eb5e55; text-shadow: 0 5px 0 #b0463f; }
+        .o-mark { font-family: 'Paytone One', sans-serif; font-size: 65px; color: #40a9e6; text-shadow: 0 5px 0 #2d7fb0; }
+        
+        .win-glow-x {
+            background: #eb5e55 !important;
+            box-shadow: 0 0 20px #eb5e55, inset 0 0 15px rgba(255,255,255,0.5);
+        }
+        .win-glow-o {
+            background: #40a9e6 !important;
+            box-shadow: 0 0 20px #40a9e6, inset 0 0 15px rgba(255,255,255,0.5);
+        }
+
+        .back-btn { font-size: 32px; cursor: pointer; color: white; }
+        #status { margin-top: 25px; font-size: 20px; font-weight: 900; background: rgba(255,255,255,0.1); padding: 10px 30px; border-radius: 50px; }
+        
+        .map-container { 
+            width: 100%; 
+            overflow-y: auto; 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 8px; 
+            padding: 15px 10px; 
+            background: rgba(0,0,0,0.2); 
+            border-radius: 20px; 
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap-reverse;
+            justify-content: center;
+        }
+        
+        .lvl-node { 
+            width: 55px; 
+            height: 55px; 
+            margin: 4px; 
+            background: #2c3e50; 
+            border-radius: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: 900; 
+            font-size: 16px; 
+            color: rgba(255,255,255,0.5); 
+            cursor: pointer; 
+            border-bottom: 4px solid #1a252f; 
+        }
+        .lvl-node.active { background: var(--btn-cyan); color: white; border-bottom-color: #0d8cb3; }
+        .lvl-node.boss { background: #e74c3c; border-bottom-color: #c0392b; color: white; }
+        .lvl-node.completed { background: var(--btn-green); border-bottom-color: #1a9665; color: white; }
+
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <div id="loading-text" style="font-weight: 800; letter-spacing: 2px;">LOADING...</div>
+    </div>
+
+    <div class="screen" id="main-menu">
+        <div class="logo-container">
+            <div class="logo-text block-word">TIC TAC</div>
+            <div class="logo-text blast-word">TOE</div>
+            <div class="adventure-tag">ADVENTURE MASTER</div>
+        </div>
+
+        <div class="victory-card">
+            <div class="victory-title" id="card-title">Adventure Win Streak</div>
+            <div class="victory-info">
+                <span class="crown-icon">👑</span>
+                <span class="win-count" id="crown-score">× 0</span>
+            </div>
+        </div>
+
+        <div class="menu-buttons">
+            <button class="btn btn-red" onclick="startGame('friends')">Fight Friends</button>
+            <button class="btn btn-orange" onclick="showAdventure()">Adventure</button>
+            <button class="btn btn-green" onclick="showLevels()">Classic</button>
+        </div>
+    </div>
+
+    <div class="screen" id="adventure-map">
+        <div class="logo-container" style="margin-top: 20px; margin-bottom: 5px;">
+            <div class="logo-text blast-word" style="font-size: 40px;">ADVENTURE</div>
+        </div>
+        <div class="map-container" id="levels-grid"></div>
+        <button class="btn btn-cyan" onclick="goHome()" style="margin: 15px 0; font-size: 18px;">KEMBALI</button>
+    </div>
+
+    <div class="screen" id="level-menu">
+        <div class="logo-container" style="margin-top: 80px;">
+            <div class="logo-text block-word" style="font-size: 50px;">PILIH LEVEL</div>
+        </div>
+        <div class="menu-buttons">
+            <button class="btn btn-green" onclick="startGame('bot', 'easy')">EASY</button>
+            <button class="btn btn-orange" onclick="startGame('bot', 'medium')">MEDIUM</button>
+            <button class="btn btn-red" onclick="startGame('bot', 'hard')">HARD</button>
+            <button class="btn btn-cyan" onclick="goHome()" style="margin-top: 20px; font-size: 18px;">KEMBALI</button>
+        </div>
+    </div>
+
+    <div class="screen" id="game-screen">
+        <div class="header-game">
+            <div class="nav-buttons">
+                <div class="back-btn" onclick="exitGame()">❮</div>
+                <div class="back-btn" onclick="resetGame()">↻</div>
+            </div>
+            <div class="score-board">
+                <div class="score-box" id="box-x">
+                    <span class="score-label" id="label-x">PLAYER X</span>
+                    <span class="score-val" id="scoreX">0</span>
+                </div>
+                <div class="score-vs">VS</div>
+                <div class="score-box" id="box-o">
+                    <span class="score-label" id="label-o">BOT</span>
+                    <span class="score-val" id="scoreO">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="grid" id="board">
+            <div class="cell" onclick="userMove(0)"></div>
+            <div class="cell" onclick="userMove(1)"></div>
+            <div class="cell" onclick="userMove(2)"></div>
+            <div class="cell" onclick="userMove(3)"></div>
+            <div class="cell" onclick="userMove(4)"></div>
+            <div class="cell" onclick="userMove(5)"></div>
+            <div class="cell" onclick="userMove(6)"></div>
+            <div class="cell" onclick="userMove(7)"></div>
+            <div class="cell" onclick="userMove(8)"></div>
+        </div>
+        <div id="status">Giliran X</div>
+    </div>
+
+    <script>
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let player = "X";
+        let scoreX = 0;
+        let scoreO = 0;
+        let highestLevel = 1;
+        let currentLevel = 1;
+        let winStreak = 0;
+        let active = true;
+        let gameMode = 'friends';
+        let difficulty = 'easy';
+        let isAdventureMode = false;
+
+        // --- AUDIO SYSTEM ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(freq, type, duration, vol = 0.1) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const sound = {
+            click: () => playTone(600, 'sine', 0.1),
+            move: () => playTone(400, 'triangle', 0.1),
+            win: () => {
+                playTone(523.25, 'square', 0.2); 
+                setTimeout(() => playTone(659.25, 'square', 0.2), 150);
+                setTimeout(() => playTone(783.99, 'square', 0.4), 300);
+            },
+            lose: () => {
+                playTone(300, 'sawtooth', 0.3);
+                setTimeout(() => playTone(200, 'sawtooth', 0.5), 200);
+            },
+            bgm: () => {
+                if(window.bgmInterval) return;
+                
+                const melody = [
+                    {f: 261.63, d: 0.2}, {f: 329.63, d: 0.2}, {f: 392.00, d: 0.2}, {f: 523.25, d: 0.4},
+                    {f: 392.00, d: 0.2}, {f: 523.25, d: 0.6},
+                    {f: 349.23, d: 0.2}, {f: 440.00, d: 0.2}, {f: 523.25, d: 0.2}, {f: 587.33, d: 0.4},
+                    {f: 392.00, d: 0.4}, {f: 329.63, d: 0.6}
+                ];
+                let noteIdx = 0;
+                
+                window.bgmInterval = setInterval(() => {
+                    if(document.hidden) return;
+                    const note = melody[noteIdx];
+                    playTone(note.f, 'triangle', note.d * 1.5, 0.03);
+                    noteIdx = (noteIdx + 1) % melody.length;
+                }, 400);
+            }
+        };
+
+        document.body.addEventListener('click', () => {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            sound.bgm();
+        }, {once: true});
+
+        function showLoading(callback, customText = "LOADING...") {
+            sound.click();
+            const loader = document.getElementById('loading-screen');
+            const loaderText = document.getElementById('loading-text');
+            loaderText.innerText = customText;
+            loader.style.display = 'flex';
+            setTimeout(() => {
+                callback();
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 400);
+            }, 800);
+        }
+
+        function updateVictoryCard() {
+            const title = document.getElementById('card-title');
+            const score = document.getElementById('crown-score');
+            title.innerText = "Adventure Win Streak";
+            score.innerText = "× " + winStreak;
+        }
+
+        function resetSessionScore() {
+            scoreX = 0; scoreO = 0;
+            document.getElementById('scoreX').innerText = "0";
+            document.getElementById('scoreO').innerText = "0";
+        }
+
+        function generateMap() {
+            const grid = document.getElementById('levels-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 100; i++) {
+                let node = document.createElement('div');
+                node.className = 'lvl-node';
+                if (i % 10 === 0) node.classList.add('boss');
+                if (i < highestLevel) node.classList.add('completed');
+                if (i === highestLevel) node.classList.add('active');
+                node.innerText = i;
+                node.onclick = () => { if (i <= highestLevel) startAdventureLevel(i); };
+                grid.appendChild(node);
+            }
+        }
+
+        function showAdventure() {
+            showLoading(() => {
+                isAdventureMode = true;
+                generateMap();
+                document.getElementById('main-menu').style.display = 'none';
+                document.getElementById('adventure-map').style.display = 'flex';
+            });
+        }
+
+        function startAdventureLevel(lvl, isAutoNext = false) {
+            const loadingMsg = isAutoNext ? "NEXT LEVEL..." : "LOADING...";
+            showLoading(() => {
+                currentLevel = lvl;
+                gameMode = 'bot';
+                isAdventureMode = true;
+                resetSessionScore();
+                
+                // --- LOGIKA KESULITAN ADVENTURE (IQ 90 - 150) ---
+                if (lvl <= 20) {
+                    difficulty = 'easy-to-medium';
+                } else if (lvl <= 50) {
+                    difficulty = 'progressive-medium';
+                } else if (lvl <= 80) {
+                    difficulty = 'progressive-hard';
+                } else {
+                    difficulty = 'insane';
+                }
+
+                document.getElementById('label-o').innerText = (lvl % 10 === 0) ? `BOSS ${lvl}` : `LV. ${lvl}`;
+                document.getElementById('adventure-map').style.display = 'none';
+                document.getElementById('game-screen').style.display = 'flex';
+                resetGame();
+            }, loadingMsg);
+        }
+
+        function showLevels() {
+            showLoading(() => {
+                isAdventureMode = false;
+                document.getElementById('main-menu').style.display = 'none';
+                document.getElementById('level-menu').style.display = 'flex';
+            });
+        }
+
+        function startGame(mode, diff = 'easy') {
+            showLoading(() => {
+                gameMode = mode;
+                difficulty = diff;
+                isAdventureMode = false;
+                resetSessionScore();
+                document.getElementById('label-o').innerText = (mode === 'bot') ? `BOT (${diff.toUpperCase()})` : "PLAYER O";
+                document.getElementById('main-menu').style.display = 'none';
+                document.getElementById('level-menu').style.display = 'none';
+                document.getElementById('game-screen').style.display = 'flex';
+                resetGame();
+            });
+        }
+
+        function exitGame() {
+            showLoading(() => {
+                resetSessionScore();
+                if (isAdventureMode) {
+                    document.getElementById('game-screen').style.display = 'none';
+                    generateMap();
+                    document.getElementById('adventure-map').style.display = 'flex';
+                } else {
+                    goHomeDirect();
+                }
+            });
+        }
+
+        function goHome() {
+            showLoading(() => {
+                goHomeDirect();
+            });
+        }
+
+        function goHomeDirect() {
+            isAdventureMode = false; 
+            resetSessionScore();
+            updateVictoryCard();
+            document.getElementById('main-menu').style.display = 'flex';
+            document.getElementById('level-menu').style.display = 'none';
+            document.getElementById('adventure-map').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'none';
+            resetGame();
+        }
+
+        function userMove(i) {
+            if (board[i] !== "" || !active || (gameMode === 'bot' && player === "O")) return;
+            sound.move();
+            makeMove(i);
+        }
+
+        function makeMove(i) {
+            board[i] = player;
+            draw();
+            let winPattern = getWinPattern(board, player);
+            if (winPattern) {
+                applyWinGlow(winPattern, player);
+                endGame(player);
+            } else if (board.every(b => b !== "")) {
+                endGame("draw");
+            } else {
+                player = (player === "X") ? "O" : "X";
+                document.getElementById('status').innerText = "Giliran " + (gameMode === 'bot' && player === "O" ? "Bot..." : player);
+                if (gameMode === 'bot' && player === "O") setTimeout(botLogic, 600);
+            }
+        }
+
+        function botLogic() {
+            if (!active) return;
+            let move;
+            
+            if (isAdventureMode) {
+                // Skalabilitas Kesulitan Adventure (IQ 90 - 150)
+                // Persentase bot melakukan langkah "sempurna" (minimax) meningkat sesuai level
+                let chanceOfPerfectMove;
+                
+                if (difficulty === 'insane') {
+                    // Level 81-100: Kecerdasan Maksimal
+                    chanceOfPerfectMove = 0.90 + (currentLevel - 80) * 0.005; // 90% - 100%
+                } else if (difficulty === 'progressive-hard') {
+                    // Level 51-80: Sangat menantang
+                    chanceOfPerfectMove = 0.60 + (currentLevel - 50) * 0.01; // 60% - 90%
+                } else if (difficulty === 'progressive-medium') {
+                    // Level 21-50: Menengah ke atas
+                    chanceOfPerfectMove = 0.30 + (currentLevel - 20) * 0.01; // 30% - 60%
+                } else {
+                    // Level 1-20: Dasar
+                    chanceOfPerfectMove = 0.05 + (currentLevel * 0.0125); // 5% - 30%
+                }
+
+                if (Math.random() < chanceOfPerfectMove) {
+                    move = minimax(board, "O").index;
+                } else {
+                    // Jika tidak sempurna, coba cari menang/blokir dulu, baru random
+                    move = findWinningMove("O") || findWinningMove("X") || randomMove();
+                }
+            } else {
+                // Logika Mode Classic
+                if (difficulty === 'hard') {
+                    move = minimax(board, "O").index;
+                } else if (difficulty === 'medium') {
+                    move = findWinningMove("O") || findWinningMove("X") || (Math.random() > 0.5 ? minimax(board, "O").index : randomMove());
+                } else {
+                    move = randomMove();
+                }
+            }
+            
+            sound.move();
+            makeMove(move);
+        }
+
+        function findWinningMove(p) {
+            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            for (let combo of wins) {
+                let pieces = combo.map(i => board[i]);
+                if (pieces.filter(pc => pc === p).length === 2 && pieces.filter(pc => pc === "").length === 1) {
+                    return combo[pieces.indexOf("")];
+                }
+            }
+            return null;
+        }
+
+        function randomMove() {
+            let empty = board.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+            return empty[Math.floor(Math.random() * empty.length)];
+        }
+
+        function minimax(newBoard, currPlayer) {
+            let availSpots = newBoard.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+            if (getWinPattern(newBoard, "X")) return {score: -10};
+            if (getWinPattern(newBoard, "O")) return {score: 10};
+            if (availSpots.length === 0) return {score: 0};
+            let moves = [];
+            for (let i = 0; i < availSpots.length; i++) {
+                let move = {}; move.index = availSpots[i];
+                newBoard[availSpots[i]] = currPlayer;
+                move.score = (currPlayer === "O") ? minimax(newBoard, "X").score : minimax(newBoard, "O").score;
+                newBoard[availSpots[i]] = "";
+                moves.push(move);
+            }
+            let bestMove;
+            if (currPlayer === "O") {
+                let bestScore = -10000;
+                for (let i = 0; i < moves.length; i++) { if (moves[i].score > bestScore) { bestScore = moves[i].score; bestMove = i; } }
+            } else {
+                let bestScore = 10000;
+                for (let i = 0; i < moves.length; i++) { if (moves[i].score < bestScore) { bestScore = moves[i].score; bestMove = i; } }
+            }
+            return moves[bestMove];
+        }
+
+        function getWinPattern(b, p) {
+            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            return wins.find(c => c.every(i => b[i] === p));
+        }
+
+        function applyWinGlow(pattern, winner) {
+            const cells = document.querySelectorAll('.cell');
+            const glowClass = (winner === "X") ? 'win-glow-x' : 'win-glow-o';
+            pattern.forEach(index => {
+                cells[index].classList.add(glowClass);
+            });
+        }
+
+        function endGame(winner) {
+            active = false;
+            if (winner === "X") {
+                sound.win();
+                scoreX++;
+                document.getElementById('scoreX').innerText = scoreX;
+                if (isAdventureMode) {
+                    winStreak++;
+                    if (currentLevel === highestLevel) highestLevel++;
+                    document.getElementById('status').innerText = "MENANG! 🎉";
+                    
+                    setTimeout(() => {
+                        startAdventureLevel(currentLevel + 1, true);
+                    }, 1500);
+                } else {
+                    document.getElementById('status').innerText = "MENANG! 🎉";
+                }
+            } else if (winner === "O") {
+                sound.lose();
+                scoreO++;
+                document.getElementById('scoreO').innerText = scoreO;
+                document.getElementById('status').innerText = "KALAH! 💀";
+                if (isAdventureMode) { 
+                    winStreak = 0; 
+                    setTimeout(resetGame, 2000); 
+                }
+            } else {
+                playTone(400, 'sine', 0.2);
+                document.getElementById('status').innerText = "SERI! 🤝";
+                if (isAdventureMode) { 
+                    winStreak = 0; 
+                    setTimeout(resetGame, 2000); 
+                }
+            }
+            updateVictoryCard();
+        }
+
+        function draw() {
+            const cells = document.querySelectorAll('.cell');
+            board.forEach((val, i) => {
+                if (val === "X") cells[i].innerHTML = '<div class="x-mark">X</div>';
+                else if (val === "O") cells[i].innerHTML = '<div class="o-mark">O</div>';
+                else cells[i].innerHTML = "";
+            });
+        }
+
+        function resetGame() {
+            sound.click();
+            board = ["", "", "", "", "", "", "", "", ""];
+            player = "X"; active = true;
+            document.getElementById('status').innerText = "Giliran X";
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.classList.remove('win-glow-x', 'win-glow-o');
+            });
+            draw();
+        }
+
+        updateVictoryCard();
+    </script>
+</body>
+</html>
